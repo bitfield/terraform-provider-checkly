@@ -6,11 +6,30 @@ import (
 	"time"
 
 	"github.com/bitfield/checkly"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // tfMap is a shorthand alias for convenience; Terraform uses this type a *lot*.
 type tfMap = map[string]interface{}
+
+var defaultAlertSettings = checkly.AlertSettings{
+	EscalationType: checkly.RunBased,
+	RunBasedEscalation: checkly.RunBasedEscalation{
+		FailedRunThreshold: 1,
+	},
+	TimeBasedEscalation: checkly.TimeBasedEscalation{
+		MinutesFailingThreshold: 5,
+	},
+	Reminders: checkly.Reminders{
+		Amount:   0,
+		Interval: 5,
+	},
+	SSLCertificates: checkly.SSLCertificates{
+		Enabled:        false,
+		AlertThreshold: 3,
+	},
+}
 
 func resourceCheck() *schema.Resource {
 	return &schema.Resource{
@@ -339,6 +358,7 @@ func resourceCheckRead(d *schema.ResourceData, client interface{}) error {
 		return fmt.Errorf("API error: %v", err)
 	}
 	resourceDataFromCheck(&check, d)
+	spew.Fdump(client.(*checkly.Client).Debug, d)
 	return nil
 }
 
@@ -387,10 +407,13 @@ func resourceDataFromCheck(c *checkly.Check, d *schema.ResourceData) error {
 	d.Set("teardown_snippet_id", c.TearDownSnippetID)
 	d.Set("local_setup_script", c.LocalSetupScript)
 	d.Set("local_teardown_script", c.LocalTearDownScript)
+	d.Set("use_global_alert_settings", c.UseGlobalAlertSettings)
+	if c.UseGlobalAlertSettings {
+		c.AlertSettings = defaultAlertSettings
+	}
 	if err := d.Set("alert_settings", setFromAlertSettings(c.AlertSettings)); err != nil {
 		return fmt.Errorf("error setting alert settings for resource %s: %s", d.Id(), err)
 	}
-	d.Set("use_global_alert_settings", c.UseGlobalAlertSettings)
 	if err := d.Set("request", setFromRequest(c.Request)); err != nil {
 		return fmt.Errorf("error setting request for resource %s: %s", d.Id(), err)
 	}
@@ -504,9 +527,12 @@ func checkFromResourceData(d *schema.ResourceData) (checkly.Check, error) {
 		TearDownSnippetID:      int64(d.Get("teardown_snippet_id").(int)),
 		LocalSetupScript:       d.Get("local_setup_script").(string),
 		LocalTearDownScript:    d.Get("local_teardown_script").(string),
-		AlertSettings:          alertSettingsFromSet(d.Get("alert_settings").(*schema.Set)),
 		UseGlobalAlertSettings: d.Get("use_global_alert_settings").(bool),
+		AlertSettings:          alertSettingsFromSet(d.Get("alert_settings").(*schema.Set)),
 		Request:                requestFromSet(d.Get("request").(*schema.Set)),
+	}
+	if check.UseGlobalAlertSettings {
+		check.AlertSettings = defaultAlertSettings
 	}
 	return check, nil
 }

@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.29.7 // indirect
 	github.com/bitfield/checkly v0.2.1
 	github.com/bmatcuk/doublestar v1.2.2 // indirect
+	github.com/davecgh/go-spew v1.1.1
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/google/go-cmp v0.4.0
 	github.com/gruntwork-io/terratest v0.18.3
