@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bitfield/checkly"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 // tfMap is a shorthand alias for convenience; Terraform uses this type a *lot*.
